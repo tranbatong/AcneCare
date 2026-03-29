@@ -1,0 +1,69 @@
+services:
+  # --- Service Database: MySQL 8.0 ---
+  mysql-db:
+    image: mysql:8.0.45-debian
+    container_name: acnecare-mysql
+    environment:
+      MYSQL_DATABASE: acnecare
+      MYSQL_ROOT_PASSWORD: root
+    # Đóng cổng public để bảo mật. App vẫn gọi được qua cổng 3306 nội bộ.
+    # ports:
+    #   - "3307:3306"
+    volumes:
+      - acnecare-db-data:/var/lib/mysql # ĐẢM BẢO KHÔNG BỊ MẤT DỮ LIỆU
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - acnecare-network
+
+  # --- Service Cache: Redis ---
+  redis-cache:
+    image: redis:alpine
+    container_name: acnecare-redis
+    # Đóng cổng public để bảo mật.
+    # ports:
+    #   - "6379:6379"
+    networks:
+      - acnecare-network
+
+  # --- Service App: AcneCare API ---
+  app:
+    image: batong25/acnecare-api:v1
+    container_name: acnecare-app
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+    ports:
+      - "8080:8080" # Chỉ mở cổng API này ra bên ngoài
+    restart: always
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db:3306/acnecare?allowPublicKeyRetrieval=true&useSSL=false&createDatabaseIfNotExist=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATA_REDIS_HOST=redis-cache
+      - SPRING_DATA_REDIS_PORT=6379
+      - SIGNER_KEY=fb886b389ba6cd149a7deef483af664b62ff17776eb0d04a991251c0e4fba92e
+      - JWT_SIGNER_KEY=fb886b389ba6cd149a7deef483af664b62ff17776eb0d04a991251c0e4fba92e
+
+      # ĐÃ ĐỔI: Phải dùng IP Public của VPS để client tải được ảnh
+      - STORAGE_BASE_URL=http://203.145.47.214:8080/api
+
+      # Chú ý: Cập nhật lại domain/IP thực tế của frontend quản trị (nếu có)
+      - CORS_ALLOWED_ORIGINS=http://localhost:5173
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - acnecare-network
+
+networks:
+  acnecare-network:
+    driver: bridge
+
+# Khai báo volume cho Database
+volumes:
+  acnecare-db-data:
