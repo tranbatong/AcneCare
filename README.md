@@ -18,7 +18,7 @@ AcneCare là một nền tảng hỗ trợ chăm sóc da thông minh, kết hợ
 * **Recommendation Engine**: Thuật toán gợi ý sản phẩm dựa trên kết quả phân tích AI và loại da.
 
 ### Frontend & Tools
-* **HTML5, CSS3, JavaScript**: Giao diện người dùng sinh động.
+* **ReactJS, JavaScript**: Giao diện người dùng sinh động.
 * **Postman**: Tài liệu hóa và kiểm thử API.
 * **Git/GitHub**: Quản lý mã nguồn.
 
